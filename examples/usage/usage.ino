@@ -3,8 +3,6 @@
 #include "MQTT_HASS.h"
 
 // Initialize objects from the lib
-MQTT_HASS client;
-
 void setup() {
 }
 
