@@ -124,10 +124,12 @@ void Entity::fillDeviceJSON(JSONBufferWriter &writer) {
   writer.endObject();
 }
 
-Sensor::Sensor(const String name, const String displayName, MQTT_HASS &client, Device dev, DeviceClasses deviceClass, String unitOfMeasurement)
+Sensor::Sensor(const String name, const String displayName, MQTT_HASS &client, Device dev, DeviceClasses deviceClass,
+               String unitOfMeasurement, EntityCategories entityCategory)
 : Entity(client, dev, name, displayName)
-, deviceClass_(deviceClass) 
-, unitOfMeasurement_(unitOfMeasurement) {
+, deviceClass_(deviceClass)
+, unitOfMeasurement_(unitOfMeasurement)
+, entityCategory_(EntityCategories::normal) {
     Entity::init("homeassistant/sensor/particle_" + dev.name + "/" + name + "/");
 }
 
@@ -146,6 +148,8 @@ bool Sensor::publishDiscovery() {
     writer.name("device_class").value(deviceClasses2Str[deviceClass_]);
   if (unitOfMeasurement_ != "")
     writer.name("unit_of_measurement").value(unitOfMeasurement_);
+  if (entityCategory_ != EntityCategories::normal)
+    writer.name("entity_category").value("diagnostic");
   writer.endObject();
 
   return Entity::publishDiscovery(payload);

@@ -181,6 +181,12 @@ private:
 
 class Sensor : public Entity {
 public:
+  enum EntityCategories {
+    normal,
+    diagnostic,
+    __ENTITY_CATEGORIES_MAX,
+  };
+
   enum DeviceClasses {
     None,
     apparent_power,
@@ -241,7 +247,7 @@ public:
 
   Sensor() = delete;
   Sensor(const String name, const String displayName, MQTT_HASS &client, Device dev, DeviceClasses deviceClass = DeviceClasses::None,
-         String unitOfMeasurement = "");
+         String unitOfMeasurement = "", EntityCategories entityCategory = EntityCategories::normal);
 
   bool publishDiscovery();
   bool publishAvailability();
@@ -250,6 +256,7 @@ public:
 private:
   DeviceClasses deviceClass_;
   String unitOfMeasurement_;
+  EntityCategories entityCategory_;
 
   const char* deviceClasses2Str[__DEVICE_CLASSES_MAX] = {
     "None",                           // DeviceClasses::None
@@ -307,7 +314,6 @@ private:
     "weight",
     "wind_speed",
   };
-
 };
 
 class Button : public Entity {
