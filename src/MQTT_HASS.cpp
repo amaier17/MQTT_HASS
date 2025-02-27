@@ -129,7 +129,7 @@ Sensor::Sensor(const String name, const String displayName, MQTT_HASS &client, D
 : Entity(client, dev, name, displayName)
 , deviceClass_(deviceClass)
 , unitOfMeasurement_(unitOfMeasurement)
-, entityCategory_(EntityCategories::normal) {
+, entityCategory_(entityCategory) {
     Entity::init("homeassistant/sensor/particle_" + dev.name + "/" + name + "/");
 }
 
@@ -148,7 +148,7 @@ bool Sensor::publishDiscovery() {
     writer.name("device_class").value(deviceClasses2Str[deviceClass_]);
   if (unitOfMeasurement_ != "")
     writer.name("unit_of_measurement").value(unitOfMeasurement_);
-  if (entityCategory_ != EntityCategories::normal)
+  if (entityCategory_ == EntityCategories::diagnostic)
     writer.name("entity_category").value("diagnostic");
   writer.endObject();
 
