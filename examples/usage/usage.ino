@@ -2,15 +2,17 @@
 
 #include "MQTT_HASS.h"
 
+// Get the MQTT_HASS static instance
 byte mqtt_server[] = {192, 168, 0, 3};
 MQTT_HASS& client = MQTT_HASS::getInstance(mqtt_server, 1883);
 
+// Create a device object
 Device dev = {
-    "imatesterbaby",
-    "Particle Argon",
-    "1234567890",
+    .name = "imatesterbaby",
+    .model = "Particle Argon",
 };
 
+// Define our callbacks
 void buttonCallback(char* topic, uint8_t* payload, unsigned int length) {
     Serial.println("Button pressed");
 }
@@ -28,8 +30,10 @@ void garagecallback(char* topic, uint8_t* payload, unsigned int length) {
     Serial.println("Garage door " + message);
 }
 
+// Create our sensors
 BinarySensor tamper("tamper", "Tamper Sensor", client, dev, BinarySensor::DeviceClasses::tamper);
 Sensor temperature("temperature", "Temperature Sensor", client, dev, Sensor::DeviceClasses::temperature, String("\xb0") + String("C"));
+Sensor garageHealth("garageHealth", "Garage Door Diagnostic Health Sensor", client, dev, Sensor::DeviceClasses::None, "", Sensor::EntityCategories::diagnostic);
 Button myButton("button", "Button but bigger", client, dev, buttonCallback);
 Button myButton2("button2", "Button but bigger2", client, dev, buttonCallback2);
 Cover myGarage("garage", "Garage Door", client, dev, garagecallback, Cover::DeviceClasses::garage);
@@ -43,10 +47,11 @@ void setup() {
     if (client.isConnected()) {
         Serial.println("Connected");
         client.registerEntity(&tamper);
+        client.registerEntity(&temperature);
+        client.registerEntity(&garageHealth);
         client.registerEntity(&myButton);
         client.registerEntity(&myButton2);
         client.registerEntity(&myGarage);
-        client.registerEntity(&temperature);
     } else {
         Serial.println("Not connected");
     }
@@ -58,6 +63,7 @@ void loop() {
         if (i % 10 == 0) {
             tamper.updateState(BinarySensor::States::ON);
             temperature.updateState(String(25 + i));
+            garageHealth.updateState("healthy");
             Serial.println("Changing temperature to " + String(25 + i));
         } else {
             tamper.updateState(BinarySensor::States::OFF);
