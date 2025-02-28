@@ -21,9 +21,15 @@ MQTT_HASS::~MQTT_HASS() {
 
 
 bool MQTT_HASS::connect(const char *username, const char *password) {
+	if (MQTT::isConnected())
+		return true;
+
   if (!entities_.isEmpty())
     entities_.clear();
-  return MQTT::connect("particle" + Utils::getSerialNum() + String(Time.now()),username, password);
+  if (!MQTT::connect("particle" + Utils::getSerialNum() + String(Time.now()),username, password))
+		return false;
+
+	return !MQTT::subscribe("homeassistant/status");
 }
 
 bool MQTT_HASS::registerEntity(Entity *entity)
@@ -44,12 +50,27 @@ bool MQTT_HASS::publishAvailabilities() {
 
 void MQTT_HASS::globalCallback(char *topic, uint8_t *payload, unsigned int length) {
   String topic_str(topic);
-
-  for (auto it = entities_.begin(); it != entities_.end(); it++) {
-    Entity *entity = *it;
-    if (topic_str == entity->topicBase_ + "command" && entity->callbackPtr_ != nullptr)
-    entity->callbackPtr_(topic, payload, length);
-  }
+	char p[length + 1];
+	memcpy(p, payload, length);
+	p[length] = NULL;
+	String message(p);
+	
+	// If we're given the "birth" message we need to resend the config
+	if (topic_str == "homeassistant/status") {
+		if (message == "online") {
+			for (auto it = entities_.begin(); it != entities_.end(); it++) {
+				Entity *entity = *it;
+				entity->publishDiscovery();
+			}
+			publishAvailabilities();
+		}
+	} else {
+		for (auto it = entities_.begin(); it != entities_.end(); it++) {
+			Entity *entity = *it;
+			if (topic_str == entity->topicBase_ + "command" && entity->callbackPtr_ != nullptr)
+			entity->callbackPtr_(topic, payload, length);
+		}
+	}
 }
 
 void MQTT_HASS::init() {

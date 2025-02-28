@@ -2,7 +2,7 @@
 
 #include "MQTT_HASS.h"
 
-byte mqtt_server[] = {192, 168, 1, 3};
+byte mqtt_server[] = {192, 168, 0, 3};
 MQTT_HASS& client = MQTT_HASS::getInstance(mqtt_server, 1883);
 
 Device dev = {
@@ -40,24 +40,41 @@ void setup() {
     Serial.begin();
     Serial.println("Trying connect");
     client.connect("mqtt_user", "mqtt_password");
-    client.registerEntity(&tamper);
-    client.registerEntity(&myButton);
-    client.registerEntity(&myButton2);
-    client.registerEntity(&myGarage);
-    client.registerEntity(&temperature);
+    if (client.isConnected()) {
+        Serial.println("Connected");
+        client.registerEntity(&tamper);
+        client.registerEntity(&myButton);
+        client.registerEntity(&myButton2);
+        client.registerEntity(&myGarage);
+        client.registerEntity(&temperature);
+    } else {
+        Serial.println("Not connected");
+    }
 }
 
 void loop() {
     static int i = 0;
-    if (i % 10 == 0) {
-        tamper.updateState(BinarySensor::States::ON);
-        temperature.updateState(String(25 + i));
-        Serial.println("Changing temperature to " + String(25 + i));
+    if (client.isConnected()) {
+        if (i % 10 == 0) {
+            tamper.updateState(BinarySensor::States::ON);
+            temperature.updateState(String(25 + i));
+            Serial.println("Changing temperature to " + String(25 + i));
+        } else {
+            tamper.updateState(BinarySensor::States::OFF);
+        }
+        i++;
+        delay(1000);
+        client.publishAvailabilities();
+        client.loop();
     } else {
-        tamper.updateState(BinarySensor::States::OFF);
+        client.connect("mqtt_user", "mqtt_password");
+        if (client.isConnected()) {
+            Serial.println("Connected");
+            client.registerEntity(&tamper);
+            client.registerEntity(&myButton);
+            client.registerEntity(&myButton2);
+            client.registerEntity(&myGarage);
+            client.registerEntity(&temperature);
+        }
     }
-    i++;
-    delay(1000);
-    client.publishAvailabilities();
-    client.loop();
 }
